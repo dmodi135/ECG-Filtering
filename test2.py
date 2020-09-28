@@ -42,12 +42,6 @@ signals7, fields7 = wfdb.rdsamp('rec_1', channels=[1], sampfrom=0, sampto= 1000)
 display(signals7)
 display(fields7)
 
-
-time = np.linspace(0, 2, 1000, endpoint=False)
-plt.plot(time, signals, 'b-', label='signal')
-plt.plot(time, signals7, 'g-', linewidth=2, label='filtered signal')
-plt.show()
-
 z = fft(signals)
 display(np.max(z))
 #signals = np.abs(signals)
@@ -56,6 +50,10 @@ sampling_freq = 500
 sampling_duration = 2
 number_of_samples = int(sampling_freq * sampling_duration)
 time = np.linspace(0, sampling_duration, number_of_samples, endpoint=False)
+
+plt.plot(time, signals, 'b-', label='signal')
+plt.plot(time, signals7, 'g-', linewidth=2, label='filtered signal')
+plt.show()
 
 N  = 3    # Filter order
 Wn = .1 #1-0.735 # Cutoff frequency
@@ -73,16 +71,16 @@ plt.show()
 noise = signals-fsignals #unfiltered - filtered should just leave noise
 
 '''
-rms1 = np.sqrt(np.mean(signals7**2))
+rms1 = np.sqrt(np.mean(fsignals**2))
 rms2 = np.sqrt(np.mean(noise**2))
+SNR = (rms1/rms2)**2
 '''
+
 ms1 = np.mean(fsignals**2)
 ms2 = np.mean(noise**2)
-
 SNR = 10 * np.log(ms1/ms2)
+
 print(SNR)
-
-
 
 
 '''
