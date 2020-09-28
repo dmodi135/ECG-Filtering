@@ -8,9 +8,10 @@ import pandas as pd
 import librosa
 import shutil
 import posixpath
+from scipy.fft import fft, ifft
 
 if "record" is not locals():
-    os.chdir("ecg-database/Person_01/")
+    os.chdir("/Users/dhruvmodi/Desktop/ECG-Filtering/ecg-database/Person_01/")
 
 import wfdb
 
@@ -40,10 +41,49 @@ display(fields)
 signals7, fields7 = wfdb.rdsamp('rec_1', channels=[1], sampfrom=0, sampto= 1000) #194400)
 display(signals7)
 display(fields7)
+
+
 time = np.linspace(0, 2, 1000, endpoint=False)
 plt.plot(time, signals, 'b-', label='signal')
 plt.plot(time, signals7, 'g-', linewidth=2, label='filtered signal')
 plt.show()
+
+z = fft(signals)
+display(np.max(z))
+#signals = np.abs(signals)
+
+sampling_freq = 500
+sampling_duration = 2
+number_of_samples = int(sampling_freq * sampling_duration)
+time = np.linspace(0, sampling_duration, number_of_samples, endpoint=False)
+
+N  = 3    # Filter order
+Wn = .1 #1-0.735 # Cutoff frequency
+b, a = signal.butter(N, Wn, 'low')
+fsignals = signal.filtfilt(b, a, signals, axis=0)
+
+plt.plot(time, signals, 'b-', label='signal')
+plt.plot(time, fsignals-0.05, 'g-', linewidth=2, label='filtered signal') #subtracting just for visuals
+plt.show()
+
+#signals = signals / 1000
+#fsignals = fsignals / 1000
+#signal7 = signals7 / 1000
+
+noise = signals-fsignals #unfiltered - filtered should just leave noise
+
+'''
+rms1 = np.sqrt(np.mean(signals7**2))
+rms2 = np.sqrt(np.mean(noise**2))
+'''
+ms1 = np.mean(fsignals**2)
+ms2 = np.mean(noise**2)
+
+SNR = 10 * np.log(ms1/ms2)
+print(SNR)
+
+
+
 
 '''
 def butter_bandpass(lowcut, highcut, fs, order=5):
@@ -148,11 +188,6 @@ plt.subplots_adjust(hspace=0.35)
 plt.show()
 '''
 
-from scipy.fft import fft, ifft
-z = fft(signals)
-display(np.max(z))
-#signals = np.abs(signals)
-
 '''
 # Filter requirements.
 T = 2.0         # Sample Period
@@ -245,19 +280,3 @@ plt.plot(time, y, 'g-', linewidth=2, label='filtered signal')
 plt.legend()
 plt.show()
 '''
-
-sampling_freq = 500
-sampling_duration = 2
-number_of_samples = int(sampling_freq * sampling_duration)
-time = np.linspace(0, sampling_duration, number_of_samples, endpoint=False)
-
-N  = 3    # Filter order
-Wn = .1 #1-0.735 # Cutoff frequency
-b, a = signal.butter(N, Wn, 'low')
-fsignals = signal.filtfilt(b, a, signals, axis=0)
-
-plt.plot(time, signals, 'b-', label='signal')
-plt.plot(time, fsignals-0.05, 'g-', linewidth=2, label='filtered signal') #subtracting just for visuals
-plt.show()
-
-print('hi')
