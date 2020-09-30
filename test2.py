@@ -42,8 +42,8 @@ N  = 2 # Filter order
 Wn = 0.06 # Cutoff frequency bw 0 & 1 (30 Hz cutoff bcz of fourier which is 500(fs) * 0.06)
 b, a = signal.butter(N, Wn, 'low') #point at which the gain drops to 1/sqrt(2) that of the passband (the “-3 dB point”)
 fsignals = signal.filtfilt(b, a, signals, axis=0)
-plt.plot(time, signals, 'b-', label='signal')
-plt.plot(time, fsignals-0.05, 'g-', linewidth=2, label='filtered signal') #subtracting just for visuals
+plt.plot(time, signals, label='signal')
+plt.plot(time, fsignals, 'r-', linewidth=2, label='filtered signal') #subtracting just for visuals
 plt.show()
 
 
@@ -78,8 +78,9 @@ t = np.linspace(0, 2, 1000)
 tout, y, x = signal.lsim2(sys, signals, t)
 
 plt.plot(t, signals)
-plt.plot(t, y)
+plt.plot(t, y, 'r-')
 plt.show()
+
 
 ms1 = np.mean(y**2)
 ms2 = np.mean(noise**2)
