@@ -4,15 +4,8 @@ import matplotlib.pyplot as plt
 from scipy import signal
 import numpy as np
 import os
-import pandas as pd
-import librosa
-import shutil
-import posixpath
 from scipy.fft import fft, ifft
 import wfdb
-import cmath
-from scipy.signal import *
-from ltiarithmetic import TransferFunction, Z_R, Z_C, Z_L, s
 
 if "record" is not locals():
     os.chdir("/Users/dhruvmodi/Desktop/ECG-Filtering/ecg-database/Person_01/")
@@ -20,6 +13,7 @@ if "record" is not locals():
 record = wfdb.rdrecord('rec_1')
 wfdb.plot_wfdb(record=record, title='MIT record 1')
 display(record.__dict__)
+
 
 #read in noisy data for 2 seconds
 signals, fields = wfdb.rdsamp('rec_1', channels=[0], sampfrom=0, sampto= 1000) #194400)
@@ -46,19 +40,19 @@ plt.show()
 #do and plot filter
 N  = 2 # Filter order
 Wn = 0.06 # Cutoff frequency bw 0 & 1 (30 Hz cutoff bcz of fourier which is 500(fs) * 0.06)
-
 b, a = signal.butter(N, Wn, 'low') #point at which the gain drops to 1/sqrt(2) that of the passband (the “-3 dB point”)
 fsignals = signal.filtfilt(b, a, signals, axis=0)
-
 plt.plot(time, signals, 'b-', label='signal')
 plt.plot(time, fsignals-0.05, 'g-', linewidth=2, label='filtered signal') #subtracting just for visuals
 plt.show()
+
 
 #potential SNR calculation
 ms1 = np.mean(fsignals**2)
 ms2 = np.mean(noise**2)
 SNR = 10 * np.log(ms1/ms2) #one method of SNR calculation in decibels
-print(SNR)
+print("2nd Order Butter SNR: " + str(SNR))
+
 
 ## Fourier Transform
 signals = signals.T
@@ -69,6 +63,7 @@ plt.plot(freq, f.T)
 plt.plot(np.linspace(0, 30,30), np.linspace(0, 30,30)) #check a good cutoff freq
 plt.show()
 signals = signals.T
+
 
 #transfer function; 2nd order RC filter using 1k resistors and 4u capacitors (look at bode plots)
 #http://sim.okawa-denshi.jp/en/CRCRtool.php
@@ -85,5 +80,10 @@ tout, y, x = signal.lsim2(sys, signals, t)
 plt.plot(t, signals)
 plt.plot(t, y)
 plt.show()
+
+ms1 = np.mean(y**2)
+ms2 = np.mean(noise**2)
+SNR2 = 10 * np.log(ms1/ms2) #one method of SNR calculation in decibels
+print("2nd Order RC SNR: " + str(SNR2))
 
 #from DWT_denoising import DWT_denoising -> for wavelet
