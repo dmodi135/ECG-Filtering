@@ -44,8 +44,8 @@ plt.show()
 
 
 #do and plot filter
-N  = 3 # Filter order
-Wn = 0.1 # Cutoff frequency bw 0 & 1 (50 Hz cutoff bcz of fourier which is 500(fs) * 0.1)
+N  = 2 # Filter order
+Wn = 0.06 # Cutoff frequency bw 0 & 1 (30 Hz cutoff bcz of fourier which is 500(fs) * 0.06)
 
 b, a = signal.butter(N, Wn, 'low') #point at which the gain drops to 1/sqrt(2) that of the passband (the “-3 dB point”)
 fsignals = signal.filtfilt(b, a, signals, axis=0)
@@ -60,32 +60,30 @@ ms2 = np.mean(noise**2)
 SNR = 10 * np.log(ms1/ms2) #one method of SNR calculation in decibels
 print(SNR)
 
-#transfer function; 2nd order RC filter using 1k resistors and 4u capacitors (look at bode plots)
-#http://sim.okawa-denshi.jp/en/CRCRtool.php
-'''
-from ltiarithmetic import TransferFunction, Z_R, Z_C, Z_L, s
-
-#cutoff Freq = (1/2piRC)
-Z_1 = Z_R(800.)
-Z_2 = Z_C(4E-6)
-H = Z_2 / (Z_1 + Z_2)
-'''
-
-sys = signal.lti(1,[800*4E-6,1]) #cutoff freq of 49.7 (abt 50)
-t = np.linspace(0, 2, 1000)
-v_in = signals
-tout, y, x = signal.lsim(sys, v_in, t)
-
-plt.plot(t, signals)
-plt.plot(t, y)
-plt.show()
-
 ## Fourier Transform
 signals = signals.T
 f = fft(signals)
 f = np.abs(f)
 freq = np.fft.fftfreq(1000, d=1/500)
 plt.plot(freq, f.T)
+plt.plot(np.linspace(0, 30,30), np.linspace(0, 30,30)) #check a good cutoff freq
+plt.show()
+signals = signals.T
+
+#transfer function; 2nd order RC filter using 1k resistors and 4u capacitors (look at bode plots)
+#http://sim.okawa-denshi.jp/en/CRCRtool.php
+
+sys = signal.lti([36982.24852071],[1,576.92307692308,36982.24852071]) #cutoff freq of 50Hz
+#sys = signal.TransferFunction([36982.24852071],[1,576.92307692308,36982.24852071]) #cutoff freq 30Hz
+
+#Transfer function does same -> function is 36982.24852071 / s^2 + 576.92307692308s + 36982.24852071
+#^ created from 2 Resistors at 1300 Ohms and 2 Caps at 4 micro F
+
+t = np.linspace(0, 2, 1000)
+tout, y, x = signal.lsim2(sys, signals, t)
+
+plt.plot(t, signals)
+plt.plot(t, y)
 plt.show()
 
 #from DWT_denoising import DWT_denoising -> for wavelet
