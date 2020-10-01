@@ -43,7 +43,7 @@ Wn = 0.06 # Cutoff frequency bw 0 & 1 (30 Hz cutoff bcz of fourier which is 500(
 b, a = signal.butter(N, Wn, 'low') #point at which the gain drops to 1/sqrt(2) that of the passband (the “-3 dB point”)
 fsignals = signal.filtfilt(b, a, signals, axis=0)
 plt.plot(time, signals, label='signal')
-plt.plot(time, fsignals, 'r-', linewidth=2, label='filtered signal') #subtracting just for visuals
+plt.plot(time, fsignals, linewidth=2, label='filtered signal') #subtracting just for visuals
 plt.show()
 
 
@@ -72,19 +72,40 @@ sys = signal.lti([36982.24852071],[1,576.92307692308,36982.24852071]) #cutoff fr
 #sys = signal.TransferFunction([36982.24852071],[1,576.92307692308,36982.24852071]) #cutoff freq 30Hz
 
 #Transfer function does same -> function is 36982.24852071 / s^2 + 576.92307692308s + 36982.24852071
-#^ created from 2 Resistors at 1300 Ohms and 2 Caps at 4 micro F
+#^ created from 2 Resistors at 1.3 kilo Ohms and 2 Caps at 4 micro Farrads
 
 t = np.linspace(0, 2, 1000)
 tout, y, x = signal.lsim2(sys, signals, t)
 
 plt.plot(t, signals)
-plt.plot(t, y, 'r-')
+plt.plot(t, y)
 plt.show()
 
 
+#potential SNR calculation
 ms1 = np.mean(y**2)
 ms2 = np.mean(noise**2)
 SNR2 = 10 * np.log(ms1/ms2) #one method of SNR calculation in decibels
 print("2nd Order RC SNR: " + str(SNR2))
+
+
+#R-Peak Detection
+
+x1 = fsignals.T
+x1 = x1.flatten()
+x2 = y.T
+x2 = x2.flatten()
+
+peaks1, _ = signal.find_peaks(x1, distance=300)
+np.diff(peaks1)
+peaks2, _ = signal.find_peaks(x2, distance=300)
+np.diff(peaks2)
+
+plt.plot(x1)
+plt.plot(peaks1, x1[peaks1], "x")
+plt.show()
+plt.plot(x2)
+plt.plot(peaks2, x2[peaks2], "x")
+plt.show()
 
 #from DWT_denoising import DWT_denoising -> for wavelet
