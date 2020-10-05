@@ -7,8 +7,7 @@ import os
 from scipy.fft import fft, ifft
 import wfdb
 
-if "record" is not locals():
-    os.chdir("/Users/dhruvmodi/Desktop/ECG-Filtering/ecg-database/Person_01/")
+os.chdir("/Users/dhruvmodi/Desktop/ECG-Filtering/ecg-database/Person_01/")
 #just some data reading
 record = wfdb.rdrecord('rec_1')
 wfdb.plot_wfdb(record=record, title='MIT record 1')
@@ -25,15 +24,28 @@ sampling_duration = 2
 number_of_samples = int(sampling_freq * sampling_duration)
 time = np.linspace(0, sampling_duration, number_of_samples, endpoint=False)
 
+os.chdir("/Users/dhruvmodi/Desktop/ECG-Filtering/")
+
 
 #plot noisy data vs clean
 plt.plot(time, signals, 'b-', label='signal')
 plt.plot(time, signals0, 'g-', linewidth=2, label='filtered signal')
+plt.legend(['Unfiltered ECG', 'True ECG'])
+plt.grid(False)
+plt.xlabel('Time (Sec)')
+plt.ylabel('mV')
+plt.title('Unfiltered vs. True ECG')
+plt.savefig('Plots/Original ECG vs Noisy ECG.png')
 plt.show()
 #plot noise data vs clean (it's different)
 noise = signals-signals0 #unfiltered - filtered should just leave noise
 plt.plot(time, noise, 'k-')
-plt.plot(time, signals0, 'g-', linewidth=2, label='filtered signal')
+plt.plot(time, signals0, 'g-')
+plt.legend(['Unfiltered ECG', 'Pure Noise'])
+plt.grid(False)
+plt.xlabel('Time (Sec)')
+plt.ylabel('mV')
+plt.title('Unfiltered vs. Noise')
 plt.show()
 
 
@@ -42,8 +54,14 @@ N  = 2 # Filter order
 Wn = 0.06 # Cutoff frequency bw 0 & 1 (30 Hz cutoff bcz of fourier which is 500(fs) * 0.06)
 b, a = signal.butter(N, Wn, 'low') #point at which the gain drops to 1/sqrt(2) that of the passband (the “-3 dB point”)
 fsignals = signal.filtfilt(b, a, signals, axis=0)
-plt.plot(time, signals, label='signal')
-plt.plot(time, fsignals, linewidth=2, label='filtered signal') #subtracting just for visuals
+plt.plot(time, signals)
+plt.plot(time, fsignals) #subtracting just for visuals
+plt.legend(['Unfiltered ECG', 'Butter Filtered ECG'])
+plt.grid(False)
+plt.xlabel('Time (Sec)')
+plt.ylabel('mV')
+plt.title('Butter Filtered Data')
+plt.savefig('Plots/2nd Order Butter @ 30.png')
 plt.show()
 
 
@@ -60,7 +78,13 @@ f = fft(signals)
 f = np.abs(f)
 freq = np.fft.fftfreq(1000, d=1/500)
 plt.plot(freq, f.T)
-plt.plot(np.linspace(0, 30,30), np.linspace(0, 30,30)) #check a good cutoff freq
+#plt.plot(np.linspace(0, 30,30), np.linspace(0, 30,30)) #check a good cutoff freq
+plt.legend(['Frequency Magnitudes'])
+plt.grid(False)
+plt.xlabel('Frequency')
+plt.ylabel('mV')
+plt.title('Fourier Transformed Data')
+plt.savefig('Plots/Fourier.png')
 plt.show()
 signals = signals.T
 
@@ -79,6 +103,12 @@ tout, y, x = signal.lsim2(sys, signals, t)
 
 plt.plot(t, signals)
 plt.plot(t, y)
+plt.legend(['Unfiltered ECG', 'RC Filtered ECG'])
+plt.grid(False)
+plt.xlabel('Time (Sec)')
+plt.ylabel('mV')
+plt.title('RC Filtered Data')
+plt.savefig('Plots/2nd Order RC @ 30.png')
 plt.show()
 
 
@@ -103,9 +133,20 @@ np.diff(peaks2)
 
 plt.plot(x1)
 plt.plot(peaks1, x1[peaks1], "x")
+plt.grid(False)
+plt.xlabel('Time (Sec)')
+plt.ylabel('mV')
+plt.title('Butter Filtered w/ Peaks')
+plt.savefig('Plots/Digital RPeak 300.png')
 plt.show()
+
 plt.plot(x2)
 plt.plot(peaks2, x2[peaks2], "x")
+plt.grid(False)
+plt.xlabel('Time (Sec)')
+plt.ylabel('mV')
+plt.title('RC Filtered w/ Peaks')
+plt.savefig('Plots/Analog RPeak 300.png')
 plt.show()
 
 #from DWT_denoising import DWT_denoising -> for wavelet
