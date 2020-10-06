@@ -13,7 +13,7 @@ os.chdir("/Users/dhruvmodi/Desktop/ECG-Filtering/ecg-database/Person_01/")
 signals, fields = wfdb.rdsamp('rec_1', channels=[0], sampfrom=0, sampto= 1000)
 
 #unfiltered_ecg_dat = np.loadtxt(example_dir)
-unfiltered_ecg = signals
+unfiltered_ecg = signals.flatten()
 fs = 500
 
 detectors = Detectors(fs)

@@ -6,6 +6,7 @@ import numpy as np
 import os
 from scipy.fft import fft, ifft
 import wfdb
+from ecgdetectors import Detectors
 
 os.chdir("/Users/dhruvmodi/Desktop/ECG-Filtering/ecg-database/Person_01/")
 #just some data reading
@@ -13,14 +14,16 @@ record = wfdb.rdrecord('rec_1')
 wfdb.plot_wfdb(record=record, title='MIT record 1')
 display(record.__dict__)
 
+sampTo = 10000
+sampTime = 20
 
 #read in noisy data for 2 seconds
-signals, fields = wfdb.rdsamp('rec_1', channels=[0], sampfrom=0, sampto= 1000) #194400)
+signals, fields = wfdb.rdsamp('rec_1', channels=[0], sampfrom=0, sampto= sampTo) #194400)
 #read in clean data for 2 seconds
-signals0, fields0 = wfdb.rdsamp('rec_1', channels=[1], sampfrom=0, sampto= 1000) #194400)
+signals0, fields0 = wfdb.rdsamp('rec_1', channels=[1], sampfrom=0, sampto= sampTo) #194400)
 #assign variables and create time-frame
 sampling_freq = 500
-sampling_duration = 2
+sampling_duration = sampTime
 number_of_samples = int(sampling_freq * sampling_duration)
 time = np.linspace(0, sampling_duration, number_of_samples, endpoint=False)
 
@@ -29,7 +32,7 @@ os.chdir("/Users/dhruvmodi/Desktop/ECG-Filtering/")
 
 #plot noisy data vs clean
 plt.plot(time, signals, 'b-', label='signal')
-plt.plot(time, signals0, 'g-', linewidth=2, label='filtered signal')
+plt.plot(time, signals0, 'g-', label='filtered signal')
 plt.legend(['Unfiltered ECG', 'True ECG'])
 plt.grid(False)
 plt.xlabel('Time (Sec)')
@@ -76,7 +79,7 @@ print("2nd Order Butter SNR: " + str(SNR))
 signals = signals.T
 f = fft(signals)
 f = np.abs(f)
-freq = np.fft.fftfreq(1000, d=1/500)
+freq = np.fft.fftfreq(sampTo, d=1/500)
 plt.plot(freq, f.T)
 #plt.plot(np.linspace(0, 30,30), np.linspace(0, 30,30)) #check a good cutoff freq
 plt.legend(['Frequency Magnitudes'])
@@ -98,7 +101,7 @@ sys = signal.lti([36982.24852071],[1,576.92307692308,36982.24852071]) #cutoff fr
 #Transfer function does same -> function is 36982.24852071 / s^2 + 576.92307692308s + 36982.24852071
 #^ created from 2 Resistors at 1.3 kilo Ohms and 2 Caps at 4 micro Farrads
 
-t = np.linspace(0, 2, 1000)
+t = np.linspace(0, sampTime, sampTo)
 tout, y, x = signal.lsim2(sys, signals, t)
 
 plt.plot(t, signals)
@@ -121,11 +124,36 @@ print("2nd Order RC SNR: " + str(SNR2))
 
 #R-Peak Detection
 
+fs = 500
+detectors = Detectors(fs)
+
 x1 = fsignals.T
 x1 = x1.flatten()
 x2 = y.T
 x2 = x2.flatten()
 
+r_peaks1 = detectors.engzee_detector(x1)
+r_peaks2 = detectors.engzee_detector(x2)
+
+plt.plot(x1)
+plt.plot(r_peaks1, x1[r_peaks1], "x")
+plt.grid(False)
+plt.xlabel('Time (Sec)')
+plt.ylabel('mV')
+plt.title('Butter Filtered w/ Peaks')
+plt.savefig('Plots/Digital RPeak 300.png')
+plt.show()
+
+plt.plot(x2)
+plt.plot(r_peaks2, x2[r_peaks2], "x")
+plt.grid(False)
+plt.xlabel('Time (Sec)')
+plt.ylabel('mV')
+plt.title('RC Filtered w/ Peaks')
+plt.savefig('Plots/Analog RPeak 300.png')
+plt.show()
+
+'''
 peaks1, _ = signal.find_peaks(x1, distance=300)
 np.diff(peaks1)
 peaks2, _ = signal.find_peaks(x2, distance=300)
@@ -148,5 +176,6 @@ plt.ylabel('mV')
 plt.title('RC Filtered w/ Peaks')
 plt.savefig('Plots/Analog RPeak 300.png')
 plt.show()
+'''
 
 #from DWT_denoising import DWT_denoising -> for wavelet
