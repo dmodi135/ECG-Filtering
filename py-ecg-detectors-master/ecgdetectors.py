@@ -456,7 +456,7 @@ class Detectors:
 
         b, a = signal.butter(1, [f1*2, f2*2], btype='bandpass')
 
-        filtered_ecg = signal.lfilter(b, a, unfiltered_ecg)        
+        filtered_ecg = unfiltered_ecg#signal.lfilter(b, a, unfiltered_ecg)
 
         diff = np.diff(filtered_ecg) 
 
