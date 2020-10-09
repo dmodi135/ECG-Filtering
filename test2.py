@@ -7,16 +7,16 @@ import os
 from scipy.fft import fft, ifft
 import wfdb
 from ecgdetectors import Detectors
-from DWT_ECG import DWT_denoise
+from DWT_ECG import DWT_denoise, r_isolate_wavelet
 
 os.chdir("/Users/dhruvmodi/Desktop/ECG-Filtering/mit-database/")
 
-sampTime = 10
+sampTime = 30
 sampling_freq = 360
 sampTo = sampTime*sampling_freq
 
 #read in noisy data for 2 seconds
-signals, fields = wfdb.rdsamp('118e24', channels=[0], sampfrom=108000, sampto=108000 + sampTo) #194400)
+signals, fields = wfdb.rdsamp('118e06', channels=[0], sampfrom=108000, sampto=108000 + sampTo) #194400)
 #read in clean data for 2 seconds
 signals0, fields0 = wfdb.rdsamp('118', channels=[0], sampfrom=108000, sampto=108000 + sampTo) #194400)
 #assign variables and create time-frame
@@ -25,11 +25,14 @@ number_of_samples = int(sampling_freq * sampling_duration)
 time = np.linspace(0, sampling_duration, number_of_samples, endpoint=False)
 
 os.chdir("/Users/dhruvmodi/Desktop/ECG-Filtering/")
-
+signals = signals-np.mean(signals)
+signals0 = signals0-np.mean(signals0)
+'''
 difference1 = 0-signals[0]
 signals = signals + difference1
 difference2 = 0-signals0[0]
 signals0 = signals0 + difference2
+'''
 
 #plot noisy data vs clean
 plt.plot(time, signals, 'b-', label='signal')
@@ -50,6 +53,7 @@ plt.grid(False)
 plt.xlabel('Time (Sec)')
 plt.ylabel('mV')
 plt.title('Unfiltered vs. Noise')
+plt.savefig('Plots/Noisy.png')
 plt.show()
 
 
@@ -69,7 +73,7 @@ plt.savefig('Plots/2nd Order Butter @ 30.png')
 plt.show()
 #potential SNR calculation
 ms1 = np.mean(fsignals**2)
-ms2 = np.mean(noise**2)
+ms2 = np.mean((fsignals-signals0)**2)
 SNR = 10 * np.log(ms1/ms2) #one method of SNR calculation in decibels
 print("2nd Order Butter SNR: " + str(SNR))
 
@@ -114,13 +118,14 @@ plt.savefig('Plots/2nd Order RC @ 30.png')
 plt.show()
 #potential SNR calculation
 ms1 = np.mean(y**2)
-ms2 = np.mean(noise**2)
+ms2 = np.mean((y-signals0)**2)
 SNR2 = 10 * np.log(ms1/ms2) #one method of SNR calculation in decibels
 print("2nd Order RC SNR: " + str(SNR2))
 
 
 #Wavelet Filter
-signalsW = DWT_denoise(signals, sampling_freq, sampTo)
+s1= signals.flatten()
+signalsW = DWT_denoise(s1, sampling_freq, sampTo)
 
 plt.plot(t, signals)
 plt.plot(t, signalsW)
@@ -133,7 +138,7 @@ plt.savefig('Plots/Wavelet Filtered.png')
 plt.show()
 #potential SNR calculation
 ms1 = np.mean(signalsW**2)
-ms2 = np.mean(noise**2)
+ms2 = np.mean((signalsW-signals0)**2)
 SNR3 = 10 * np.log(ms1/ms2) #one method of SNR calculation in decibels
 print("Wavelet SNR: " + str(SNR3))
 
@@ -150,6 +155,12 @@ x3 = signalsW.T
 x3 = x3.flatten()
 x4 = signals0.T
 x4 = x4.flatten()
+
+#Wavelet Rpeaks
+x1 = r_isolate_wavelet(x1,sampling_freq,sampTo)
+x2 = r_isolate_wavelet(x2,sampling_freq,sampTo)
+x3 = r_isolate_wavelet(x3,sampling_freq,sampTo)
+x4 = r_isolate_wavelet(x4,sampling_freq,sampTo)
 
 peaks1, _ = signal.find_peaks(x1, prominence=1, distance=200)
 np.diff(peaks1)
@@ -187,7 +198,7 @@ plt.title('Wavelet w/ Peaks')
 plt.savefig('Plots/Wavelet RPeak 300.png')
 plt.show()
 
-plt.plot(signals0 + 3)
+plt.plot(x4 + 3)
 plt.plot(x3 + 2)
 plt.plot(x2 + 1)
 plt.plot(x1)
@@ -198,41 +209,24 @@ plt.plot(peaks1, x1[peaks1], "kx")
 plt.grid(False)
 plt.legend(['True ECG', 'Wavelet Filtered ECG', 'Butter Filtered ECG', 'RC Filtered ECG'])
 plt.xlabel('Time (Sec)')
-plt.ylabel('mV')
 plt.title('Peaks Analog & Digital')
 plt.savefig('Plots/Peaks Analog & Digital.png')
 plt.show()
 
 
-'''
 r_peaks1 = detectors.engzee_detector(x1)
 r_peaks2 = detectors.engzee_detector(x2)
 r_peaks3 = detectors.engzee_detector(x3)
+r_peaks4 = detectors.engzee_detector(x4)
 
+plt.plot(x4 + 3)
+plt.plot(x3 + 2)
+plt.plot(x2 + 1)
 plt.plot(x1)
-plt.plot(r_peaks1, x1[r_peaks1], "x")
-plt.grid(False)
-plt.xlabel('Time (Sec)')
-plt.ylabel('mV')
-plt.title('Butter Filtered w/ Engzee')
-plt.savefig('Plots/Digital RPeak 300.png')
-plt.show()
-
-plt.plot(x2)
-plt.plot(r_peaks2, x2[r_peaks2], "x")
-plt.grid(False)
-plt.xlabel('Time (Sec)')
-plt.ylabel('mV')
-plt.title('RC Filtered w/ Engzee')
-plt.savefig('Plots/Analog RPeak 300.png')
-plt.show()
-
-plt.plot(signals0 + 2)
-plt.plot(x1 + 1)
-plt.plot(x2)
-plt.plot(r_peaks3, x3[r_peaks3] + 2, "x")
-plt.plot(r_peaks1, x1[r_peaks1] + 1, "x")
-plt.plot(r_peaks2, x2[r_peaks2], "x")
+plt.plot(r_peaks4, x4[r_peaks4] + 3, "kx")
+plt.plot(r_peaks3, x3[r_peaks3] + 2, "kx")
+plt.plot(r_peaks2, x2[r_peaks2] + 1, "kx")
+plt.plot(r_peaks1, x1[r_peaks1], "kx")
 plt.grid(False)
 plt.legend(['True ECG', 'Butter Filtered ECG', 'RC Filtered ECG'])
 plt.xlabel('Time (Sec)')
@@ -240,7 +234,19 @@ plt.ylabel('mV')
 plt.title('Engzee Analog & Digital')
 plt.savefig('Plots/Engzee Analog & Digital.png')
 plt.show()
-'''
+
+
+ms1 = np.mean(signals0**2)
+ms2 = np.mean((signals-signals0)**2)
+SNR4 = 10 * np.log(ms1/ms2) #one method of SNR calculation in decibels
+print("Real SNR: " + str(SNR4))
 
 
 #from DWT_denoising import DWT_denoising -> for wavelet
+
+
+'''
+Noisy - the noisy database signal -> signals
+Clean - the clean database signal -> signals0
+filtered - the filtered signal -> fsignals
+'''
