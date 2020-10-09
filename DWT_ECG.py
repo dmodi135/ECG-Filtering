@@ -65,5 +65,5 @@ def DWT_denoise(sig,fs,N):
     newCoeffs[-1]=zerosD
     
     #reconstructs denoised signal without cA8 or cD1, with all other coeffs thresholded
-    denoised=pywt.waverec(newCoeffs,wavelet=waveName)
+    denoised = pywt.waverec(newCoeffs,wavelet=waveName)
     return denoised
