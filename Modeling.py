@@ -9,9 +9,10 @@ import wfdb
 from ecgdetectors import Detectors
 from DWT_ECG import DWT_denoise, r_isolate_wavelet
 
+plt.rcParams.update({'font.size':36})
 os.chdir("/Users/dhruvmodi/Desktop/ECG-Filtering/mit-database")
 
-sampTime = 3
+sampTime = 10
 sampling_freq = 360
 sampTo = sampTime*sampling_freq
 
@@ -27,12 +28,12 @@ os.chdir('/Users/dhruvmodi/Desktop/ECG-Filtering/')
 clean = clean-np.mean(clean)
 noisy = noisy-np.mean(noisy)
 
-b, a = signal.butter(2, 0.03, 'high')
+'''
+b, a = signal.butter(2, 0.05, 'high')
 clean = signal.lfilter(b, a, clean, axis=0)
-b, a = signal.butter(2, 0.03, 'high')
+b, a = signal.butter(2, 0.05, 'high')
 noisy = signal.lfilter(b, a, noisy, axis=0)
 
-'''
 difference1 = 0-signals[0]
 signals = signals + difference1
 difference2 = 0-signals0[0]
@@ -40,9 +41,10 @@ signals0 = signals0 + difference2
 '''
 
 #plot noisy data vs clean
+OG_plot = plt.figure(figsize=(40,20))
 plt.plot(time, clean, 'b-', label='signal')
 plt.plot(time, noisy, 'g-', label='noisy signal')
-plt.legend(['True ECG', 'Unfiltered ECG'])
+plt.legend(['Clean ECG', 'Noisy ECG'])
 plt.grid(False)
 plt.xlabel('Time (Sec)')
 plt.ylabel('mV')
@@ -53,7 +55,7 @@ plt.show()
 noise = noisy-clean #unfiltered - filtered should just leave noise
 plt.plot(time, noise, 'k-')
 plt.plot(time, clean, 'g-')
-plt.legend(['Unfiltered ECG', 'Pure Noise'])
+plt.legend(['Noisy ECG', 'Pure Noise'])
 plt.grid(False)
 plt.xlabel('Time (Sec)')
 plt.ylabel('mV')
@@ -66,11 +68,12 @@ plt.show()
 N  = 2 # Filter order
 Wn = 0.08 # Cutoff frequency bw 0 & 1 (30 Hz cutoff bcz of fourier which is 500(fs) * 0.08)
 b, a = signal.butter(N, Wn, 'low') #point at which the gain drops to 1/sqrt(2) that of the passband (the “-3 dB point”)
-butter_filtered= signal.lfilter(b, a, noisy, axis=0)
-butter_plot=plt.figure(figsize=(20,10))
+butter_filtered = signal.lfilter(b, a, noisy, axis=0)
+butter_plot = plt.figure(figsize=(40,20))
 plt.plot(time, noisy)
-plt.plot(time, butter_filtered,color='green') #subtracting just for visuals
-plt.legend(['Unfiltered ECG', 'Butter Filtered ECG'])
+plt.plot(time, clean, 'black')
+plt.plot(time, butter_filtered,color='purple') #subtracting just for visuals
+plt.legend(['Noisy ECG', 'Clean ECG', 'Butter Filtered ECG'])
 plt.grid(False)
 plt.xlabel('Time (Sec)')
 plt.ylabel('mV')
@@ -113,10 +116,11 @@ sys = signal.lti([35332.69263384],[1,563.90977443609,35332.69263384]) #cutoff fr
 t = np.linspace(0, sampTime, sampTo)
 tout, rc_filtered, x = signal.lsim2(sys, noisy, t)
 
-rc_plot=plt.figure(figsize=(20,10))
+rc_plot=plt.figure(figsize=(40,20))
 plt.plot(t, noisy)
+plt.plot(time, clean, 'black')
 plt.plot(t, rc_filtered,color='red')
-plt.legend(['Unfiltered ECG', 'RC Filtered ECG'])
+plt.legend(['Unfiltered ECG', 'Clean ECG', 'RC Filtered ECG'])
 plt.grid(False)
 plt.xlabel('Time (Sec)')
 plt.ylabel('mV')
@@ -133,10 +137,11 @@ print("2nd Order RC SNR: " + str(SNR2))
 #Wavelet Filter
 noisy_flat= noisy.flatten()
 wavelet_filtered = DWT_denoise(noisy_flat, sampling_freq, sampTo)
-wavelet_plot=plt.figure(figsize=(20,10))
+wavelet_plot=plt.figure(figsize=(40,20))
 plt.plot(t, noisy)
+plt.plot(time, clean, 'black')
 plt.plot(t, wavelet_filtered,color='orange')
-plt.legend(['Unfiltered ECG', 'Wavelet Filtered ECG'])
+plt.legend(['Unfiltered ECG', 'Clean ECG', 'Wavelet Filtered ECG'])
 plt.grid(False)
 plt.xlabel('Time (Sec)')
 plt.ylabel('mV')
@@ -179,7 +184,7 @@ np.diff(peaks_noisy)
 
 #Plotting regular r-peak detection w findpeaks
 
-
+'''
 plt.plot(xbutter)
 plt.plot(peaks_butter, xbutter[peaks_butter], "x")
 plt.grid(False)
@@ -206,39 +211,41 @@ plt.ylabel('mV')
 plt.title('Wavelet w/ Peaks')
 plt.savefig('Plots/Wavelet RPeak 300.png')
 plt.show()
+'''
 
-
-filters=plt.figure(figsize=(20,10))
+filters=plt.figure(figsize=(40,20))
 plt.grid(False)
 #plt.legend(['True ECG', 'Wavelet Filtered ECG', 'Butter Filtered ECG', 'RC Filtered ECG'])
 plt.xlabel('Time (Sec)')
 plt.title('Find_Peaks Analog & Digital',y=1.08)
+plt.axis('off')
 
 ax_clean=filters.add_subplot(5,1,1)
 ax_clean.title.set_text("Clean Signal")
 plt.plot(xclean)
-plt.plot(peaks_clean, xclean[peaks_clean], "kx")
+plt.plot(peaks_clean, xclean[peaks_clean], "ko")
 
 ax_noisy=filters.add_subplot(5,1,2)
 ax_noisy.title.set_text("Noisy Signal")
 plt.plot(xnoisy,color='purple')
-plt.plot(peaks_noisy,xnoisy[peaks_noisy],"kx")
+plt.plot(peaks_noisy,xnoisy[peaks_noisy],"ko")
 
 ax_wavelet=filters.add_subplot(5,1,3)
 ax_wavelet.title.set_text("Wavelet Filtered")
 plt.plot(xwavelet,color='orange')
-plt.plot(peaks_wavelet, xwavelet[peaks_wavelet], "kx")
+plt.plot(peaks_wavelet, xwavelet[peaks_wavelet], "ko")
 
 ax_rc=filters.add_subplot(5,1,4)
 ax_rc.title.set_text("RC Filtered")
 plt.plot(xrc,color='red')
-plt.plot(peaks_rc, xrc[peaks_rc], "kx")
+plt.plot(peaks_rc, xrc[peaks_rc], "ko")
 
 ax_butter=filters.add_subplot(5,1,5)
 ax_butter.title.set_text("Butter Filtered")
 plt.plot(xbutter,color='green')
-plt.plot(peaks_butter, xbutter[peaks_butter], "kx")
+plt.plot(peaks_butter, xbutter[peaks_butter], "ko")
 
+plt.tight_layout()
 plt.savefig('Plots/Peaks Analog & Digital.png')
 plt.show()
 
@@ -250,36 +257,37 @@ r_peaks_clean = detectors.engzee_detector(xclean)
 r_peaks_noisy=detectors.engzee_detector(xnoisy)
 
 
-rpeaks=plt.figure(figsize=(20,10))
+rpeaks=plt.figure(figsize=(40,20))
 plt.grid(False)
 plt.xlabel('Time (Sec)')
 plt.ylabel('mV')
 plt.title('Engzee Analog & Digital',y=1.08)
+plt.axis('off')
 
 ax_clean=rpeaks.add_subplot(5,1,1)
 ax_clean.title.set_text("Clean Peaks")
 plt.plot(xclean)
-plt.plot(r_peaks_clean, xclean[r_peaks_clean], "kx")
+plt.plot(r_peaks_clean, xclean[r_peaks_clean], "ko")
 
 ax_noisy=rpeaks.add_subplot(5,1,2)
 ax_noisy.title.set_text("Noisy Signal")
 plt.plot(xnoisy,color='purple')
-plt.plot(peaks_noisy,xnoisy[peaks_noisy],"kx")
+plt.plot(peaks_noisy,xnoisy[peaks_noisy],"ko")
 
 ax_wavelet=rpeaks.add_subplot(5,1,3)
 ax_wavelet.title.set_text("Wavelet Peaks")
 plt.plot(xwavelet,color='orange')
-plt.plot(r_peaks_wavelet, xwavelet[r_peaks_wavelet], "kx")
+plt.plot(r_peaks_wavelet, xwavelet[r_peaks_wavelet], "ko")
 
 ax_rc=rpeaks.add_subplot(5,1,4)
 ax_rc.title.set_text("RC Peaks")
 plt.plot(xrc,color='red')
-plt.plot(r_peaks_rc, xrc[r_peaks_rc], "kx")
+plt.plot(r_peaks_rc, xrc[r_peaks_rc], "ko")
 
 ax_butter=rpeaks.add_subplot(5,1,5)
 ax_butter.title.set_text("Butter Peaks")
 plt.plot(xbutter,color='green')
-plt.plot(r_peaks_butter, xbutter[r_peaks_butter], "kx")
+plt.plot(r_peaks_butter, xbutter[r_peaks_butter], "ko")
 
 plt.tight_layout()
 plt.savefig('Plots/Engzee Analog & Digital.png')
@@ -301,36 +309,37 @@ r_peaks_clean = detectors.engzee_detector(xclean)
 r_peaks_noisy_wavelet=detectors.engzee_detector(xwnoisy)
 
 #plotting partial wavelet deconstruction r peak detection with engzee
-wave_rpeaks=plt.figure(figsize=(20,10))
+wave_rpeaks=plt.figure(figsize=(40,20))
 plt.grid(False)
 plt.xlabel('Time (Sec)')
 plt.ylabel('mV')
 plt.title('Partial Wavelet Reconstruction R-Peaks + Engzee',y=1.08)
+plt.axis('off')
 
 ax_clean=wave_rpeaks.add_subplot(5,1,1)
 ax_clean.title.set_text("Clean Peaks")
 plt.plot(xclean)
-plt.plot(r_peaks_clean, xclean[r_peaks_clean], "kx")
+plt.plot(r_peaks_clean, xclean[r_peaks_clean], "ko")
 
 ax_noisy=wave_rpeaks.add_subplot(5,1,2)
 ax_noisy.title.set_text("Noisy Signal")
 plt.plot(xnoisy,color='purple')
-plt.plot(r_peaks_noisy_wavelet,xnoisy[r_peaks_noisy_wavelet],"kx")
+plt.plot(r_peaks_noisy_wavelet,xnoisy[r_peaks_noisy_wavelet],"ko")
 
 ax_wavelet=wave_rpeaks.add_subplot(5,1,3)
 ax_wavelet.title.set_text("Wavelet Peaks")
 plt.plot(xwavelet,color='orange')
-plt.plot(r_peaks_wavelet_wavelet, xwavelet[r_peaks_wavelet_wavelet], "kx")
+plt.plot(r_peaks_wavelet_wavelet, xwavelet[r_peaks_wavelet_wavelet], "ko")
 
 ax_rc=wave_rpeaks.add_subplot(5,1,4)
 ax_rc.title.set_text("RC Peaks")
 plt.plot(xrc,color='red')
-plt.plot(r_peaks_rc_wavelet, xrc[r_peaks_rc_wavelet], "kx")
+plt.plot(r_peaks_rc_wavelet, xrc[r_peaks_rc_wavelet], "ko")
 
 ax_butter=wave_rpeaks.add_subplot(5,1,5)
 ax_butter.title.set_text("Butter Peaks")
 plt.plot(xbutter,color='green')
-plt.plot(r_peaks_butter_wavelet, xbutter[r_peaks_butter_wavelet], "kx")
+plt.plot(r_peaks_butter_wavelet, xbutter[r_peaks_butter_wavelet], "ko")
 
 plt.tight_layout()
 plt.savefig('Plots/PartialWaveletReconstructionEngzee.png')
@@ -349,36 +358,37 @@ wpeaks_noisy, _ = signal.find_peaks(xwnoisy, prominence=1, distance=200)
 np.diff(wpeaks_noisy)
 
 #plotting r peak detection with partial wavelet deconstruction and find peaks
-w_rpeaks=plt.figure(figsize=(20,10))
+w_rpeaks=plt.figure(figsize=(40,20))
 plt.grid(False)
 plt.xlabel('Time (Sec)')
 plt.ylabel('mV')
 plt.title('Partial Wavelet Reconstruction R-Peaks + find_peaks',y=1.08)
+plt.axis('off')
 
 ax_clean=w_rpeaks.add_subplot(5,1,1)
 ax_clean.title.set_text("Clean Peaks")
 plt.plot(xclean)
-plt.plot(peaks_clean, xclean[peaks_clean], "kx")
+plt.plot(peaks_clean, xclean[peaks_clean], "ko")
 
 ax_noisy=w_rpeaks.add_subplot(5,1,2)
 ax_noisy.title.set_text("Noisy Signal")
 plt.plot(xnoisy,color='purple')
-plt.plot(wpeaks_noisy,xnoisy[wpeaks_noisy],"kx")
+plt.plot(wpeaks_noisy,xnoisy[wpeaks_noisy],"ko")
 
 ax_wavelet=w_rpeaks.add_subplot(5,1,3)
 ax_wavelet.title.set_text("Wavelet Peaks")
 plt.plot(xwavelet,color='orange')
-plt.plot(wpeaks_wavelet, xwavelet[wpeaks_wavelet], "kx")
+plt.plot(wpeaks_wavelet, xwavelet[wpeaks_wavelet], "ko")
 
 ax_rc=w_rpeaks.add_subplot(5,1,4)
 ax_rc.title.set_text("RC Peaks")
-plt.plot(xrc,color='red')
-plt.plot(wpeaks_rc, xrc[wpeaks_rc], "kx")
+plt.plot(xrc, color='red')
+plt.plot(wpeaks_rc, xrc[wpeaks_rc], "ko")
 
 ax_butter=w_rpeaks.add_subplot(5,1,5)
 ax_butter.title.set_text("Butter Peaks")
-plt.plot(xbutter,color='green')
-plt.plot(wpeaks_butter, xbutter[wpeaks_butter], "kx")
+plt.plot(xbutter, color='green')
+plt.plot(wpeaks_butter, xbutter[wpeaks_butter], "ko")
 
 plt.tight_layout()
 plt.savefig('Plots/PartialWaveletReconstructionFind_Peaks.png')
@@ -398,3 +408,5 @@ Noisy - the noisy database signal -> signals
 Clean - the clean database signal -> signals0
 filtered - the filtered signal -> fsignals
 '''
+
+exit(0)
