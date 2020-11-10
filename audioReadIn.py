@@ -4,6 +4,7 @@ from scipy import signal
 import numpy as np
 import matplotlib.pyplot as plt
 from scipy.io import wavfile
+from scipy import fft
 from DWT_ECG import DWT_denoise, r_isolate_wavelet
 from biosppy.signals import ecg
 import heartpy
@@ -46,12 +47,12 @@ plt.plot(frames)
 plt.show()
 
 '''
+RECORD_SECONDS = (5*60) + 1
 
 CHUNK = 1024
 FORMAT = pyaudio.paInt16 #can do float32 (probably want to)
 CHANNELS = 1
 RATE = 44100
-RECORD_SECONDS = (5*60) + 1
 WAVE_OUTPUT_FILENAME = "output.wav"
 
 p = pyaudio.PyAudio()
@@ -83,12 +84,10 @@ wf.setframerate(RATE)
 wf.writeframes(b''.join(frames))
 wf.close()
 
-
 RATE, signals = wavfile.read("output.wav")
 
 length=len(signals)
 new_len=round(length/2)
-data=data[1:new_len]
 new_rate = 500
 sampTo = (new_rate*RECORD_SECONDS)
 
@@ -104,9 +103,9 @@ Q = 30.0  # Quality factor
 b, a = signal.iirnotch(f0, Q, new_rate)
 processed = signal.lfilter(b,a,signals,axis=0)
 
-processed = signals[new_rate:sampTo]
+processed = processed[new_rate:sampTo]
 
-#x1 = r_isolate_wavelet(processed.flatten(),fs,sampTo)
+#x1 = r_isolate_wavelet(processed.flatten(),new_rate,len(processed.flatten()))
 peaks, _ = signal.find_peaks(processed, prominence=max(processed[0:1000]), distance=new_rate/2)
 np.diff(peaks)
 
@@ -123,6 +122,8 @@ plt.plot(processed[0:sampTo])
 plt.plot(peaks, processed[peaks], "rx")
 plt.show()
 
+plt.plot(wd['RR_list'])
+plt.show()
 '''
 arr2 = read("MiaMinute.wav")
 signals2 = np.array(arr2[1])
