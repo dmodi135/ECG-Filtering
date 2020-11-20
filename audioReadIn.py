@@ -8,6 +8,9 @@ from scipy import fft
 from DWT_ECG import DWT_denoise, r_isolate_wavelet
 from biosppy.signals import ecg
 import heartpy
+import hrvanalysis
+import pyhrv
+from HRV_manual import get_hrv
 
 '''
 CHUNK = 528
@@ -45,15 +48,15 @@ time = np.linspace(0, RECORD_SECONDS, RATE * RECORD_SECONDS, endpoint=False)
 print(frames.shape)
 plt.plot(frames)
 plt.show()
-
 '''
+
 RECORD_SECONDS = (5*60) + 1
 
 CHUNK = 1024
 FORMAT = pyaudio.paInt16 #can do float32 (probably want to)
 CHANNELS = 1
 RATE = 44100
-WAVE_OUTPUT_FILENAME = "output.wav"
+WAVE_OUTPUT_FILENAME = "Modified.wav"
 
 p = pyaudio.PyAudio()
 
@@ -84,63 +87,68 @@ wf.setframerate(RATE)
 wf.writeframes(b''.join(frames))
 wf.close()
 
-RATE, signals = wavfile.read("output.wav")
+#Read in signals
+RATE, signals = wavfile.read("Modified.wav")
 
+# Resample data
 length=len(signals)
 new_len=round(length/2)
 new_rate = 500
 sampTo = (new_rate*RECORD_SECONDS)
-
-# Resample data
 number_of_samples = round(len(signals) * float(new_rate) / RATE)
 signals = signal.resample(signals, number_of_samples)
 
-b, a = signal.butter(2, 5/new_rate, 'low')
-signals = signal.lfilter(b, a, signals, axis=0)
+#Filter data
 f0 = 60.0  # Frequency to be removed from signal (Hz)
 Q = 30.0  # Quality factor
-# Design notch filter
 b, a = signal.iirnotch(f0, Q, new_rate)
 processed = signal.lfilter(b,a,signals,axis=0)
+b, a = signal.butter(2, 5/new_rate, 'low')
+processed = signal.lfilter(b, a, processed, axis=0)
+b, a = signal.iirnotch(f0, Q, new_rate)
+processed = signal.lfilter(b,a,processed,axis=0)
 
+#get rid of 1st second and append processed
 processed = processed[new_rate:sampTo]
 
-#x1 = r_isolate_wavelet(processed.flatten(),new_rate,len(processed.flatten()))
 peaks, _ = signal.find_peaks(processed, prominence=max(processed[0:1000]), distance=new_rate/2)
 np.diff(peaks)
 
+'''
+processed = processed[peaks[0]:peaks[-1]]
+processed = np.append(processed, processed)
+processed = np.append(processed, processed)
+processed = np.append(processed, processed)
+
+peaks, _ = signal.find_peaks(processed, prominence=max(processed[0:new_rate]), distance=new_rate/3) #try 1.5
+np.diff(peaks)
+'''
+
+wdata,measures = get_hrv(peaks,processed[peaks],new_rate,'fft')
+
+print('lf/hf ratio = %.3f' %measures['lf/hf'])
+print ("Average Heart Beat is: %.01f" %measures['bpm'])
+
+'''
+# heartpy hrv analysis
 rr = heartpy.analysis.calc_rr(peaks, new_rate)
 rr['RR_list_cor']=rr['RR_list']
 wd, m = heartpy.analysis.calc_fd_measures(method = 'fft', working_data = rr)
 wd['peaklist']= processed
 print('%.3f' %m['lf/hf'])
-print('something')
 
-#fig=plt.figure()
-#ax1=fig.add_subplot(1,2,1)
-plt.plot(processed[0:sampTo])
+something = print(hrvanalysis.get_frequency_domain_features(peaks))
+something2 = pyhrv.frequency_domain.welch_psd(peaks)
+something3 = pyhrv.frequency_domain.ar_psd(peaks)
+something4 = pyhrv.frequency_domain.lomb_psd(peaks)
+'''
+
+# plot shit
+plt.plot(processed)
 plt.plot(peaks, processed[peaks], "rx")
 plt.show()
 
-plt.plot(wd['RR_list'])
-plt.show()
-'''
-arr2 = read("MiaMinute.wav")
-signals2 = np.array(arr2[1])
-#signals = signals[0:sampTo]
-#out = ecg.ecg(signal=signals, sampling_rate=44100., show=True)
+print('something')
 
-b2, a2 = signal.butter(2, 5/RATE, 'low')
-processed2 = signal.lfilter(b2, a2, signals2, axis=0)
-#processed = DWT_denoise(signals, fs, sampTo)
-processed2 = processed2[0:sampTo]
-
-#x1 = r_isolate_wavelet(processed.flatten(),fs,sampTo)
-peaks2, _ = signal.find_peaks(processed2, prominence=100, distance=20000)
-np.diff(peaks2)
-
-ax2=fig.add_subplot(1,2,2)
-plt.plot(processed2[0:sampTo])
-plt.plot(peaks2, processed2[peaks2], "rx")
-plt.show()
-'''
+#plt.plot(wd['RR_list'])
+#plt.show()
